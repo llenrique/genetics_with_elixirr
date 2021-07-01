@@ -25,35 +25,34 @@ defmodule Genetic do
   end
 
   def crossover(population, opts \\ []) do
-    Enum.reduce(population, [], fn {p1, p2}, acc ->
-      cx_point = :rand.uniform(length(p1))
-      {
-        {h1, t1},
-        {h2, t2}
-      } = {
-        Enum.split(p1, cx_point),
-        Enum.split(p2, cx_point)
-      }
-      {c1, c2} = {h1 ++ t2, h2 ++ t1}
-      [c1, c2 | acc]
-    end)
+    population
+    |> Enum.reduce([],
+      fn {p1, p2}, acc ->
+        cx_point = :rand.uniform(length(p1))
+        {{h1, t1},{h2, t2}} = {Enum.split(p1, cx_point),Enum.split(p2, cx_point)}
+        {c1, c2} = {h1 ++ t2, h2 ++ t1}
+        [c1, c2 | acc]
+      end
+    )
   end
 
   def mutation(population, opts \\ []) do
-    Enum.map(population, fn chromosome ->
-      if :rand.uniform() < 0.05 do
-        Enum.shuffle(chromosome)
-      else
-        chromosome
+    population
+    |> Enum.map(
+      fn chromosome ->
+        if :rand.uniform() < 0.05 do
+          Enum.shuffle(chromosome)
+        else
+          chromosome
+        end
       end
-    end)
+    )
   end
 
   def run(fitness_function, genotype, max_fitness, opts \\ []) do
     population = initialize(genotype)
     evolve(population, fitness_function, genotype, max_fitness, opts)
   end
-
   def evolve(poulation, fitness_function, genotype, max_fitness, opts \\ []) do
     population = evaluate(poulation, fitness_function, opts)
     best = hd(population)
