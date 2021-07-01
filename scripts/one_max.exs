@@ -1,4 +1,4 @@
-genotype = fn -> for _ <- 1,,1000, do: Enum.random(0..1) end
+genotype = fn -> for _ <- 1..1000, do: Enum.random(0..1) end
 
 max_fitness = 1000
 
