@@ -20,7 +20,7 @@ defmodule Genetic do
 
   def select(population, opts \\ []) do
     population
-    |> Enum.chunk_by(2)
+    |> Enum.chunk_every(2)
     |> Enum.map(&List.to_tuple(&1))
   end
 
@@ -51,15 +51,15 @@ defmodule Genetic do
 
   def run(fitness_function, genotype, max_fitness, opts \\ []) do
     population = initialize(genotype)
-    evolve(population, fitness_function, genotype, max_fitness, opts)
+    population
+    |> evolve(fitness_function, genotype, max_fitness, opts)
   end
-  def evolve(poulation, fitness_function, genotype, max_fitness, opts \\ []) do
-    population = evaluate(poulation, fitness_function, opts)
+  def evolve(population, fitness_function, genotype, max_fitness, opts \\ []) do
+    population = evaluate(population, fitness_function, opts)
     best = hd(population)
     IO.write("\r Current best: #{fitness_function.(best)}")
     if fitness_function.(best) == max_fitness do
       best
-
     else
       population
       |> select(opts)
