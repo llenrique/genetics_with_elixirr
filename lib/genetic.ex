@@ -7,6 +7,7 @@
 # Visit http://www.pragmaticprogrammer.com/titles/smgaelixir for more book information.
 #---
 defmodule Genetic do
+  alias Types.Chromosome
 
   def initialize(genotype, opts \\ []) do
     population_size = Keyword.get(opts, :population_size, 100)
@@ -15,7 +16,18 @@ defmodule Genetic do
 
   def evaluate(population, fitness_function, opts \\ []) do
     population
-    |> Enum.sort_by(fitness_function, &>=/2)
+    |> _fit_population(fitness_function)
+    |> Enum.sort_by(& &1.fitness, &>=/2)
+  end
+
+  defp _fit_population(population, fitness_function) do
+    Enum.map(population, &_fit_chromosome(&1, fitness_function))
+  end
+
+  defp _fit_chromosome(chromosome, fitness_function) do
+    fitness = fitness_function.(chromosome)
+    age = chromosome.age + 1
+    %Chromosome{chromosome | fitness: fitness, age: age}
   end
 
   def select(population, opts \\ []) do
@@ -25,47 +37,50 @@ defmodule Genetic do
   end
 
   def crossover(population, opts \\ []) do
-    population
-    |> Enum.reduce([],
-      fn {p1, p2}, acc ->
-        cx_point = :rand.uniform(length(p1))
-        {{h1, t1},{h2, t2}} = {Enum.split(p1, cx_point),Enum.split(p2, cx_point)}
-        {c1, c2} = {h1 ++ t2, h2 ++ t1}
-        [c1, c2 | acc]
-      end
-    )
+    Enum.reduce(population, [], &_create_children_chromosomes/2)
+  end
+
+  defp _create_children_chromosomes({p1, p2} = _parents, acc) do
+    cx_point =
+      p1
+      |> Map.get(:genes, [])
+      |> length()
+      |> :rand.uniform()
+
+    {{h1, t1},{h2, t2}} = {Enum.split(p1.genes, cx_point), Enum.split(p2.genes, cx_point)}
+    {c1, c2} = {%Chromosome{p1 | genes: h1 ++ t2}, %Chromosome{p1 | genes: h2 ++ t1}}
+    [c1, c2 | acc]
   end
 
   def mutation(population, opts \\ []) do
-    population
-    |> Enum.map(
-      fn chromosome ->
-        if :rand.uniform() < 0.05 do
-          Enum.shuffle(chromosome)
-        else
-          chromosome
-        end
-      end
-    )
+    Enum.map(population, &_shuffle_chromosome_genes(&1))
   end
 
-  def run(fitness_function, genotype, max_fitness, opts \\ []) do
-    population = initialize(genotype)
-    population
-    |> evolve(fitness_function, genotype, max_fitness, opts)
+  defp _shuffle_chromosome_genes(chromosome) do
+    if :rand.uniform() < 0.05 do
+      %Chromosome{chromosome | genes: Enum.shuffle(chromosome.genes)}
+    else
+      chromosome
+    end
   end
-  def evolve(population, fitness_function, genotype, max_fitness, opts \\ []) do
-    population = evaluate(population, fitness_function, opts)
+
+  def run(problem, opts \\ []) do
+    population = initialize(&problem.genotype/0)
+
+    evolve(population, problem, opts)
+  end
+  def evolve(population, problem, opts \\ []) do
+    population = evaluate(population, &problem.fitness_function/1, opts)
     best = hd(population)
-    IO.write("\r Current best: #{fitness_function.(best)}")
-    if fitness_function.(best) == max_fitness do
+    IO.write("\rCurrent Best: #{best.fitness}")
+    if problem.terminate?(population) do
       best
     else
       population
       |> select(opts)
       |> crossover(opts)
       |> mutation(opts)
-      |> evolve(fitness_function, genotype, max_fitness, opts)
+      |> evolve(problem, opts)
     end
   end
 end
