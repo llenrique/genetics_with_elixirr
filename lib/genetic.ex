@@ -56,7 +56,7 @@ defmodule Genetic do
 
     {{h1, t1},{h2, t2}} = {Enum.split(p1.genes, cx_point), Enum.split(p2.genes, cx_point)}
     {c1, c2} = {%Chromosome{p1 | genes: h1 ++ t2}, %Chromosome{p1 | genes: h2 ++ t1}}
-    [c1, c2 | acc] |> IO.inspect(label: "Children")
+    [c1, c2 | acc]
   end
 
   @spec mutation([Chromosome.t()], keyword) :: list
