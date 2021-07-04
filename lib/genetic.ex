@@ -75,24 +75,25 @@ defmodule Genetic do
 
   @spec run(module(), keyword) :: Chromosome.t()
   def run(problem, opts \\ []) do
-    population = initialize(&problem.genotype/0)
+    population = initialize(&problem.genotype/0, opts)
 
-    evolve(population, problem, opts)
+    evolve(population, problem, 0, opts)
   end
 
-  @spec evolve([Chromosome.t()], module(), keyword) :: Chromosome.t()
-  def evolve(population, problem, opts \\ []) do
+  def evolve(population, problem, generation, opts \\ []) do
     population = evaluate(population, &problem.fitness_function/1, opts)
     best = hd(population)
     IO.write("\rCurrent Best: #{best.fitness}")
-    if problem.terminate?(population) do
+    if problem.terminate?(population, generation) do
       best
     else
+      generation = generation + 1
+
       population
       |> select(opts)
       |> crossover(opts)
       |> mutation(opts)
-      |> evolve(problem, opts)
+      |> evolve(problem, generation, opts)
     end
   end
 end
