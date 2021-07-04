@@ -5,14 +5,14 @@ defmodule Speller do
   def genotype do
     genes =
       Stream.repeatedly(fn -> Enum.random(?a..?z) end)
-      |> Enum.take(9)
-    %Chromosome{genes: genes, size: 9}
+      |> Enum.take(23)
+    %Chromosome{genes: genes, size: 23}
   end
 
   def fitness_function(chromosome) do
-    target = "cojofeliz"
+    target = "acidodesoxiribonucleico"
     guess = chromosome.genes
-    String.jaro_distance(target, List.to_string(guess))
+    String.bag_distance(target, List.to_string(guess))
   end
 
   def terminate?(population), do: hd(population).fitness == 1
