@@ -15,7 +15,7 @@ defmodule OneMax do
 
   # Requires a modification in the Problem behaviour to set the temperature
   @impl true
-  def terminate?([best | _], generation, temperature), do: temperature < 2
+  def terminate?([best | _], generation), do: best.fitness == 1000
 end
 
 
