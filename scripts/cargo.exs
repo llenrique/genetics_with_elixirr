@@ -11,21 +11,30 @@ defmodule Cargo do
   @impl true
   def fitness_function(chromosome) do
     profits = [6, 5, 8, 9, 6, 7, 3, 1, 2, 6]
-    profits
-    |> Enum.zip(chromosome.genes)
-    |> IO.inspect(label: "ZIP")
-    |> Enum.map(fn {p, g} -> p * g end)
-    |> IO.inspect(label: "PRODUCT P * G")
-    |> Enum.sum()
+    weights = [10, 6, 8, 7, 10, 9, 7, 11, 6, 8]
+    weight_limit = 40
+
+    potential_profits =
+      chromosome.genes
+      |> Enum.zip(profits)
+      |> Enum.map(fn {p, g} -> p * g end)
+      |> Enum.sum()
+
+    over_limit? =
+      chromosome.genes
+      |> Enum.zip(weights)
+      |> Enum.map(fn {p, g} -> p * g end)
+      |> Enum.sum()
+      |> Kernel.>(weight_limit)
+
+    if over_limit?, do: 0, else: potential_profits
   end
 
   @impl true
-  def terminate?(population) do
-    Enum.max_by(population, &Cargo.fitness_function/1).fitness == 53
-  end
+  def terminate?(population, generation), do: generation == 1000
 end
 
-soln = Genetic.run(Cargo)
+soln = Genetic.run(Cargo, population_size: 50)
 
 IO.write("\n")
 IO.inspect(soln)
@@ -33,10 +42,7 @@ IO.inspect(soln)
 weight =
   soln.genes
   |> Enum.zip([10, 6, 8, 7, 10, 9, 7, 11, 6, 8])
-  |> IO.inspect(label: "ZIP")
   |> Enum.map(fn {g, w} -> g * w end)
-  |> IO.inspect(label: "PRODUCT G * W")
   |> Enum.sum()
-  |> IO.inspect(label: "SUM")
 
 IO.write("\nWeight is: #{weight}\n")
