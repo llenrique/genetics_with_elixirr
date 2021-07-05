@@ -8,6 +8,7 @@
 #---
 defmodule Genetic do
   alias Types.Chromosome
+  alias Toolbox.Selection
 
   @spec initialize(fun(), keyword) :: list
   def initialize(genotype, opts \\ []) do
@@ -34,11 +35,29 @@ defmodule Genetic do
     %Chromosome{chromosome | fitness: fitness, age: age}
   end
 
-  @spec select([Chromosome.t()], keyword) :: [Chromosome.t()]
+  @spec select([Chromosome.t()], keyword) :: {[Chromosome.t()], [Chromosome.t()]}
   def select(population, opts \\ []) do
-    population
-    |> Enum.chunk_every(2)
-    |> Enum.map(&List.to_tuple(&1))
+    select_fn =
+      Keyword.get(opts, :selection_type, :elite)
+
+    select_rate = Keyword.get(opts, :selection_rate, 0.8)
+
+    n = round(length(population) * select_rate) # 100 * 0.8
+    n = if rem(n, 2) == 0, do: n, else: n + 1
+
+    parents = apply(Selection, select_fn, [population, n])
+
+    left_over =
+      population
+      |> MapSet.new()
+      |> MapSet.difference(MapSet.new(parents))
+
+    parents =
+      parents
+      |> Enum.chunk_every(2)
+      |> Enum.map(&List.to_tuple(&1))
+
+    {parents, MapSet.to_list(left_over)}
   end
 
   @spec crossover([Chromosome.t()], keyword) :: [Chromosome.t()]
@@ -87,13 +106,13 @@ defmodule Genetic do
     if problem.terminate?(population, generation) do
       best
     else
-      generation = generation + 1
+      {parents, left_over} = select(population, opts)
+      IO.inspect(Enum.count(parents))
+      children = crossover(parents)
 
-      population
-      |> select(opts)
-      |> crossover(opts)
+      children ++ left_over
       |> mutation(opts)
-      |> evolve(problem, generation, opts)
+      |> evolve(problem, generation+1, opts)
     end
   end
 end
