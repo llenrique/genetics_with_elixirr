@@ -2,6 +2,7 @@ defmodule OneMax do
   @behaviour Problem
 
   alias Types.Chromosome
+  alias Toolbox.Selection
 
   @impl true
   def genotype do
@@ -19,7 +20,7 @@ defmodule OneMax do
 end
 
 
-soln = Genetic.run(OneMax, population_size: 1000)
+soln = Genetic.run(OneMax, population_size: 100, selection_type: :roulette, selection_rate: 0.8)
 
 IO.write("\n")
 IO.inspect(soln, limit: :infinity)
