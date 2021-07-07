@@ -23,7 +23,7 @@ defmodule Toolbox.Selection do
 
   defp _tournament_helper(population, n, tournament_size, selected) do
     if MapSet.size(selected) == n do
-      MapSet.to_list(selected)
+      MapSet.to_list(selected) |> IO.inspect(label: "SELECT")
     else
       chosen =
         population

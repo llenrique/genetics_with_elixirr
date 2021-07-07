@@ -8,7 +8,7 @@
 #---
 defmodule Genetic do
   alias Types.Chromosome
-  alias Toolbox.Selection
+  alias Toolbox.{Selection, Crossover}
 
   @spec initialize(fun(), keyword) :: list
   def initialize(genotype, opts \\ []) do
@@ -62,20 +62,22 @@ defmodule Genetic do
 
   @spec crossover([Chromosome.t()], keyword) :: [Chromosome.t()]
   def crossover(population, opts \\ []) do
-    Enum.reduce(population, [], &_create_children_chromosomes/2)
+    crossover_fn =
+      Keyword.get(opts, :crossover_type, :single_point)
+
+    Enum.reduce(population, [], fn {p1, p2} = _parents, acc ->
+      {c1, c2} = apply(Crossover, crossover_fn, [p1, p2, opts])
+      [c1, c2 | acc]
+    end)
   end
 
-  @spec _create_children_chromosomes({Chromosome.t(), Chromosome.t()}, list) :: [[Chromosome.t()]]
-  defp _create_children_chromosomes({p1, p2} = _parents, acc) do
-    cx_point =
-      p1
-      |> Map.get(:genes, [])
-      |> length()
-      |> :rand.uniform()
-
-    {{h1, t1},{h2, t2}} = {Enum.split(p1.genes, cx_point), Enum.split(p2.genes, cx_point)}
-    {c1, c2} = {%Chromosome{p1 | genes: h1 ++ t2}, %Chromosome{p1 | genes: h2 ++ t1}}
-    [c1, c2 | acc]
+  def repair_helper(genes, k) do
+    if MapSet.size(genes) >= k do
+      MapSet.to_list(genes)
+    else
+      num = :rand.uniform(8)
+      repair_helper(MapSet.put(genes, num), k)
+    end
   end
 
   @spec mutation([Chromosome.t()], keyword) :: list
@@ -107,11 +109,10 @@ defmodule Genetic do
       best
     else
       {parents, left_over} = select(population, opts)
-      IO.inspect(Enum.count(parents))
-      children = crossover(parents)
+      children = crossover(parents, opts)
 
       children ++ left_over
-      |> mutation(opts)
+      # |> mutation(opts)
       |> evolve(problem, generation+1, opts)
     end
   end
