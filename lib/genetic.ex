@@ -1,11 +1,3 @@
-#---
-# Excerpted from "Genetic Algorithms in Elixir",
-# published by The Pragmatic Bookshelf.
-# Copyrights apply to this code. It may not be used to create training material,
-# courses, books, articles, and the like. Contact us if you are in doubt.
-# We make no guarantees that this code is fit for any purpose.
-# Visit http://www.pragmaticprogrammer.com/titles/smgaelixir for more book information.
-#---
 defmodule Genetic do
   alias Types.Chromosome
   alias Toolbox.{Selection, Crossover}
@@ -88,7 +80,12 @@ defmodule Genetic do
   end
 
   defp _mutate(chromosome, mutation_fn, opts) do
-    apply(Mutation, mutation_fn, [chromosome, opts])
+    mutation_rate = Keyword.get(opts, :mutation_rate, 0.05)
+    if :rand.uniform() < mutation_rate do
+      apply(Mutation, mutation_fn, [chromosome])
+    else
+      chromosome
+    end
   end
 
   @spec run(module(), keyword) :: Chromosome.t()
