@@ -62,15 +62,16 @@ defmodule Genetic do
 
   @spec crossover([Chromosome.t()], keyword) :: [Chromosome.t()]
   def crossover(population, opts \\ []) do
-    crossover_fn =
-      Keyword.get(opts, :crossover_type, :single_point)
-
-    Enum.reduce(population, [], fn {p1, p2} = _parents, acc ->
-      {c1, c2} = apply(Crossover, crossover_fn, [p1, p2, opts])
-      [c1, c2 | acc]
-    end)
+    crossover_fn = Keyword.get(opts, :crossover_type, :single_point)
+    Enum.reduce(population, [], &_crossover(&1, &2, crossover_fn, opts))
   end
 
+  defp _crossover({p1, p2} = _parents, acc, crossover_fn,opts) do
+    {c1, c2} = apply(Crossover, crossover_fn, [p1, p2, opts])
+    [c1, c2 | acc]
+  end
+
+  @spec repair_helper(MapSet.t(any), any) :: list
   def repair_helper(genes, k) do
     if MapSet.size(genes) >= k do
       MapSet.to_list(genes)
@@ -82,16 +83,12 @@ defmodule Genetic do
 
   @spec mutation([Chromosome.t()], keyword) :: list
   def mutation(population, opts \\ []) do
-    Enum.map(population, &_shuffle_chromosome_genes(&1))
+    mutation_fn = Keyword.get(opts, :mutation_type, :simple_shuffle)
+    Enum.map(population, &_mutate(&1, mutation_fn, opts))
   end
 
-  @spec _shuffle_chromosome_genes(Chromosome.t()) :: Chromosome.t()
-  defp _shuffle_chromosome_genes(chromosome) do
-    if :rand.uniform() < 0.05 do
-      %Chromosome{chromosome | genes: Enum.shuffle(chromosome.genes)}
-    else
-      chromosome
-    end
+  defp _mutate(chromosome, mutation_fn, opts) do
+    apply(Mutation, mutation_fn, [chromosome, opts])
   end
 
   @spec run(module(), keyword) :: Chromosome.t()
