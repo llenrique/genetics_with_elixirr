@@ -1,6 +1,6 @@
 defmodule Genetic do
   alias Types.Chromosome
-  alias Toolbox.{Selection, Crossover}
+  alias Toolbox.{Selection, Crossover, Mutation}
 
   @spec initialize(fun(), keyword) :: list
   def initialize(genotype, opts \\ []) do
@@ -106,7 +106,7 @@ defmodule Genetic do
       children = crossover(parents, opts)
 
       children ++ left_over
-      # |> mutation(opts)
+      |> mutation(opts)
       |> evolve(problem, generation+1, opts)
     end
   end
