@@ -43,13 +43,7 @@ defmodule Toolbox.Crossover do
     {c1, c2} =
       p1.genes
       |> Enum.zip(p2.genes)
-      |> Enum.map(fn {x, y} ->
-        if :rand.uniform() < rate do
-          {x, y}
-        else
-          {y, x}
-        end
-      end)
+      |> Enum.map(&_uniform(&1, rate))
       |> Enum.unzip()
 
     {
@@ -58,22 +52,32 @@ defmodule Toolbox.Crossover do
     }
   end
 
+  defp _uniform({x, y} = _zip_genes, rate) do
+    if :rand.uniform() < rate do
+      {x, y}
+    else
+      {y, x}
+    end
+  end
+
   def whole_arithmetic_recombination(p1, p2, opts) do
     alpha = Keyword.get(opts, :alpha, 0.5)
     {c1, c2} =
       p1.genes
       |> Enum.zip(p2.genes)
-      |> Enum.map(fn {x, y} ->
-        {
-          x * alpha + y * (1 - alpha),
-          x * alpha + y * (1 - alpha)
-        }
-      end)
+      |> Enum.map(&_calculate_alpha_factor(&1, alpha))
       |> Enum.unzip()
 
     {
       %Chromosome{genes: c1, size: length(c1)},
       %Chromosome{genes: c2, size: length(c2)}
+    }
+  end
+
+  defp _calculate_alpha_factor({x, y} = _zip_genes, alpha) do
+    {
+      x * alpha + y * (1 - alpha),
+      x * alpha + y * (1 - alpha)
     }
   end
 end
