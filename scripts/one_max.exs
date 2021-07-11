@@ -20,7 +20,7 @@ defmodule OneMax do
 end
 
 
-soln = Genetic.run(OneMax, population_size: 100, selection_type: :elite, alpha: 0.4, crossover_type: :whole_arithmetic_recombination)
+soln = Genetic.run(OneMax, population_size: 100, selection_type: :elite, alpha: 0.4, crossover_type: :single_point, mutation_type: :flip)
 
 IO.write("\n")
 IO.inspect(soln, limit: :infinity)
