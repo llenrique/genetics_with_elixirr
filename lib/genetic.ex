@@ -1,6 +1,6 @@
 defmodule Genetic do
   alias Types.Chromosome
-  alias Toolbox.{Selection, Crossover, Mutation}
+  alias Toolbox.{Selection, Crossover, Mutation, Reinsertion}
 
   @spec initialize(fun(), keyword) :: list
   def initialize(genotype, opts \\ []) do
@@ -76,16 +76,18 @@ defmodule Genetic do
   @spec mutation([Chromosome.t()], keyword) :: list
   def mutation(population, opts \\ []) do
     mutation_fn = Keyword.get(opts, :mutation_type, :simple_shuffle)
-    Enum.map(population, &_mutate(&1, mutation_fn, opts))
+    mutation_rate = Keyword.get(opts, :mutation_rate, 0.05)
+    n = floor(length(population) * mutation_rate)
+
+    population
+    |> Enum.take_random(n)
+    |> Enum.map(&apply(Mutation, mutation_fn, [&1]))
   end
 
-  defp _mutate(chromosome, mutation_fn, opts) do
-    mutation_rate = Keyword.get(opts, :mutation_rate, 0.05)
-    if :rand.uniform() < mutation_rate do
-      apply(Mutation, mutation_fn, [chromosome])
-    else
-      chromosome
-    end
+  def reinsertion(parents, offspring, left_over, opts \\ []) do
+    reinsertion_fn = Keyword.get(opts, :reinsertion_type, :pure)
+
+    apply(Reinsertion, reinsertion_fn, [parents, offspring, left_over])
   end
 
   @spec run(module(), keyword) :: Chromosome.t()
@@ -98,16 +100,19 @@ defmodule Genetic do
   def evolve(population, problem, generation, opts \\ []) do
     population = evaluate(population, &problem.fitness_function/1, opts)
     best = hd(population)
-    IO.write("\rCurrent Best: #{best.fitness}")
+
+    fit_str = :erlang.float_to_binary(best.fitness, decimals: 4)
+
+    IO.write("\rCurrent Best: #{fit_str}\tGeneration: #{generation}")
     if problem.terminate?(population, generation) do
       best
     else
       {parents, left_over} = select(population, opts)
       children = crossover(parents, opts)
-
-      children ++ left_over
-      |> mutation(opts)
-      |> evolve(problem, generation+1, opts)
+      mutants = mutation(population, opts)
+      offspring = children ++ mutants
+      new_population = reinsertion(parents, offspring, left_over, opts)
+      evolve(new_population, problem, generation + 1, opts)
     end
   end
 end
