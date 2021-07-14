@@ -87,7 +87,7 @@ defmodule Genetic do
   def reinsertion(parents, offspring, left_over, opts \\ []) do
     reinsertion_fn = Keyword.get(opts, :reinsertion_type, :pure)
 
-    apply(Reinsertion, reinsertion_fn, [parents, offspring, left_over])
+    apply(Reinsertion, reinsertion_fn, [parents, offspring, left_over, opts])
   end
 
   @spec run(module(), keyword) :: Chromosome.t()
