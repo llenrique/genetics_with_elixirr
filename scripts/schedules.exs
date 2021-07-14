@@ -40,6 +40,10 @@ defmodule Schedule do
 end
 
 
-soln = Genetic.run(Schedule, population_size: 100)
+soln = Genetic.run(Schedule,
+                      reinsertion_type: :elitist,
+                      selection_rate: 0.7,
+                      mutation_rate: 0.1,
+                      survival_rate: 0.2)
 IO.write("\n")
 IO.inspect(soln)
