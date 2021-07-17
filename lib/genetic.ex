@@ -1,11 +1,14 @@
 defmodule Genetic do
   alias Types.Chromosome
   alias Toolbox.{Selection, Crossover, Mutation, Reinsertion}
+  alias Utilities.{Statistics, Genealogy}
 
   @spec initialize(fun(), keyword) :: list
   def initialize(genotype, opts \\ []) do
     population_size = Keyword.get(opts, :population_size, 100)
-    for _ <- 1..population_size, do: genotype.()
+    population = for _ <- 1..population_size, do: genotype.()
+    Genealogy.add_chromosomes(population)
+    population
   end
 
   @spec evaluate([Chromosome.t()], fun(), keyword) :: list
@@ -60,6 +63,8 @@ defmodule Genetic do
 
   defp _crossover({p1, p2} = _parents, acc, crossover_fn,opts) do
     {c1, c2} = apply(Crossover, crossover_fn, [p1, p2, opts])
+    Genealogy.add_chromosome(p1, p2, c1)
+    Genealogy.add_chromosome(p1, p2, c2)
     [c1, c2 | acc]
   end
 
@@ -81,7 +86,11 @@ defmodule Genetic do
 
     population
     |> Enum.take_random(n)
-    |> Enum.map(&apply(Mutation, mutation_fn, [&1]))
+    |> Enum.map(fn c ->
+      mutant = apply(Mutation, mutation_fn, [c])
+      Genealogy.add_chromosome(c, mutant)
+      mutant
+    end)
   end
 
   def reinsertion(parents, offspring, left_over, opts \\ []) do
@@ -97,8 +106,27 @@ defmodule Genetic do
     evolve(population, problem, 0, opts)
   end
 
+  def statistics(population, generation, opts \\ []) do
+    default_statistics = [
+      min_fitness: &Enum.min_by(&1, fn c -> c.fitness end).fitness,
+      max_fitness: &Enum.max_by(&1, fn c -> c.fitness end).fitness,
+      mean_fitness: &Enum.sum(Enum.map(&1, fn c -> c.fitness end)) / length(population)
+    ]
+
+    stats = Keyword.get(opts, :statistics, default_statistics)
+
+    stats_map =
+      stats
+      |> Enum.reduce(%{}, fn {key, function}, acc ->
+        Map.put(acc, key, function.(population))
+      end)
+
+    Statistics.insert(generation, stats_map)
+  end
+
   def evolve(population, problem, generation, opts \\ []) do
     population = evaluate(population, &problem.fitness_function/1, opts)
+    statistics(population, generation, opts)
     best = hd(population)
 
     fit_str = :erlang.float_to_binary(best.fitness, decimals: 4)
